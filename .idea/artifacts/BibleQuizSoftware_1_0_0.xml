@@ -1,0 +1,9 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="BibleQuizSoftware-1.0.0">
+    <output-path>$PROJECT_DIR$/out/artifacts/BibleQuizSoftware_1_0_0</output-path>
+    <root id="archive" name="BibleQuizSoftware-1.0.0.jar">
+      <element id="library" level="project" name="com.biblequizsoftware" />
+      <element id="file-copy" path="$USER_HOME$/Downloads/jSerialComm-2.9.3.jar" />
+    </root>
+  </artifact>
+</component>
