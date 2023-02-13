@@ -19,7 +19,7 @@ import java.util.HashMap;
 public class BuzzerState {
     @FunctionalInterface
     public interface BuzzerCallback {
-        void action(BUZZER_CMD cmd);
+        void action(BUZZER_CMD cmd, int timestamp);
     }
 
     public enum BUZZER_CMD {
@@ -38,6 +38,7 @@ public class BuzzerState {
     private final short BT_PACKET_CMD = 0;
     private final short BT_PACKET_LOG = 1;
     private final short BT_PACKET_PING = 2;
+    private final short BT_PACKET_BQT_PING = 3;
 
     private final short BT_PACKET_OTA_START = 10;
     private final short BT_PACKET_OTA_MSG = 11;
@@ -50,6 +51,8 @@ public class BuzzerState {
 
     private final short BT_PACKET_CONFIG_WRITE = 30;
     private final short BT_PACKET_CONFIG_READ = 31;
+
+    private final short BT_TIMESTAMP = (short) (1 << 15);
 
     private JComboBox<SerialPort> cboDevices;
     private JButton scanButton;
@@ -102,6 +105,9 @@ public class BuzzerState {
     }
 
     private void writePacket(final short type, byte[] packetData) {
+        if (readPort == null)
+            return;
+
         byte[] payload = new byte[packetData.length + 4];
         ByteBuffer bb = ByteBuffer.wrap(payload).order(ByteOrder.LITTLE_ENDIAN);
         bb.putShort(0, type);
@@ -152,9 +158,22 @@ public class BuzzerState {
     }
 
     private void processPacket(short type, byte[] packetData) {
-        switch (type) {
+        boolean timestamp = (type & BT_TIMESTAMP) > 0;
+        final int eventTime;
+        if (timestamp) {
+            // read the last 4 bytes as a timestamp
+            byte[] tsData = Arrays.copyOfRange(packetData, packetData.length - 4, packetData.length);
+            eventTime = ByteBuffer.wrap(tsData).order(ByteOrder.LITTLE_ENDIAN).getShort(0);
+            packetData = Arrays.copyOfRange(packetData, 0, packetData.length - 4);
+        } else {
+            eventTime = 0;
+        }
+        short baseType = (short) (type & ~BT_TIMESTAMP);
+        switch (baseType) {
             case BT_PACKET_PING:
                 lastPingTime = LocalDateTime.now();
+                // send a response ping
+                writePacket(BT_PACKET_BQT_PING, new byte[0]);
                 break;
             case BT_PACKET_CONFIG_READ:
                 try {
@@ -175,34 +194,34 @@ public class BuzzerState {
                         final String cmd = new String(packetData, StandardCharsets.US_ASCII);
                         switch (cmd) {
                             case "R1":
-                                callback.action(BUZZER_CMD.R1);
+                                callback.action(BUZZER_CMD.R1, eventTime);
                                 break;
                             case "R2":
-                                callback.action(BUZZER_CMD.R2);
+                                callback.action(BUZZER_CMD.R2, eventTime);
                                 break;
                             case "R3":
-                                callback.action(BUZZER_CMD.R3);
+                                callback.action(BUZZER_CMD.R3, eventTime);
                                 break;
                             case "Y1":
-                                callback.action(BUZZER_CMD.Y1);
+                                callback.action(BUZZER_CMD.Y1, eventTime);
                                 break;
                             case "Y2":
-                                callback.action(BUZZER_CMD.Y2);
+                                callback.action(BUZZER_CMD.Y2, eventTime);
                                 break;
                             case "Y3":
-                                callback.action(BUZZER_CMD.Y3);
+                                callback.action(BUZZER_CMD.Y3, eventTime);
                                 break;
                             case "CLEAR":
-                                callback.action(BUZZER_CMD.CLEAR);
+                                callback.action(BUZZER_CMD.CLEAR, eventTime);
                                 break;
                             case "INTERRUPTION":
-                                callback.action(BUZZER_CMD.INTERRUPTION);
+                                callback.action(BUZZER_CMD.INTERRUPTION, eventTime);
                                 break;
                             case "CORRECT":
-                                callback.action(BUZZER_CMD.CORRECT);
+                                callback.action(BUZZER_CMD.CORRECT, eventTime);
                                 break;
                             case "ERROR":
-                                callback.action(BUZZER_CMD.ERROR);
+                                callback.action(BUZZER_CMD.ERROR, eventTime);
                                 break;
                         }
                     }
@@ -375,6 +394,9 @@ public class BuzzerState {
         showDialog(false);
     }
 
+    public void clearBuzzer() {
+        write(BT_PACKET_CMD, "CLEAR");
+    }
     public void showDialog(boolean exitOnClose) {
         JFrame frame = new JFrame("BQS Buzzer Control");
         frame.setContentPane(this.rootPanel);
