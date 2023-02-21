@@ -2,25 +2,35 @@ import com.biblequizsoftware.BuzzerState;
 
 public class Main {
     public static void main(String[] args) {
-        BuzzerState bqsBuzzer = new BuzzerState((cmd) -> {
+        BuzzerState bqsBuzzer = new BuzzerState((cmd, timeStamp) -> {
             // example of actions to handle
             switch (cmd) {
-                case R1 -> {
-                    System.out.println("R1 was pressed");
-                }
                 case CLEAR -> {
-                    System.out.println("Buzzer cleared");
+                    System.out.println(timeStamp + ": Buzzer cleared");
                 }
-                // NOTE: the buzzer will automatically clear after signalling CORRECT or ERROR.
-                // There will not be a separate CLEAR event in this case
-                case CORRECT -> {
-                    System.out.println("Marked correct");
+                case R1 -> {
+                    System.out.println(timeStamp + ": R1 pressed");
                 }
-                case ERROR -> {
-                    System.out.println("Marked error");
+                case R2 -> {
+                    System.out.println(timeStamp + ": R2 pressed");
+                }
+                case R3 -> {
+                    System.out.println(timeStamp + ": R3 pressed");
+                }
+                case Y1 -> {
+                    System.out.println(timeStamp + ": Y1 pressed");
+                }
+                case Y2 -> {
+                    System.out.println(timeStamp + ": Y2 pressed");
+                }
+                case Y3 -> {
+                    System.out.println(timeStamp + ": Y3 pressed");
+                }
+                case QM -> {
+                    System.out.println(timeStamp + ": QM pressed");
                 }
                 default -> {
-                    System.out.println(cmd);
+                    System.out.println(timeStamp + ": " + cmd);
                 }
             }
         });

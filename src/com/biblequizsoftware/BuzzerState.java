@@ -29,9 +29,7 @@ public class BuzzerState {
         Y1,
         Y2,
         Y3,
-        INTERRUPTION,
-        CORRECT,
-        ERROR,
+        QM,
         CLEAR
     }
 
@@ -83,9 +81,17 @@ public class BuzzerState {
     private SerialPort[] scannedPorts;
 
     private final String[] volumeLabels = new String[]{
-            "Volume low",
-            "Volume medium",
-            "Volume high",
+            "Volume 0%",
+            "Volume 10%",
+            "Volume 20%",
+            "Volume 30%",
+            "Volume 40%",
+            "Volume 50%",
+            "Volume 60%",
+            "Volume 70%",
+            "Volume 80%",
+            "Volume 90%",
+            "Volume 100%",
     };
 
     private void scanForDevices() {
@@ -122,7 +128,7 @@ public class BuzzerState {
         String key = "volume";
         if (readConfig.containsKey(key)) {
             try {
-                final int value = Integer.parseInt(readConfig.get(key));
+                final int value = Integer.parseInt(readConfig.get(key)) / 10;
                 cboVolume.setSelectedItem(volumeLabels[value]);
             } catch (NumberFormatException ex) {
                 // do nothing, just ignore
@@ -158,12 +164,12 @@ public class BuzzerState {
     }
 
     private void processPacket(short type, byte[] packetData) {
-        boolean timestamp = (type & BT_TIMESTAMP) > 0;
+        boolean timestamp = (type & BT_TIMESTAMP) != 0;
         final int eventTime;
         if (timestamp) {
             // read the last 4 bytes as a timestamp
             byte[] tsData = Arrays.copyOfRange(packetData, packetData.length - 4, packetData.length);
-            eventTime = ByteBuffer.wrap(tsData).order(ByteOrder.LITTLE_ENDIAN).getShort(0);
+            eventTime = ByteBuffer.wrap(tsData).order(ByteOrder.LITTLE_ENDIAN).getInt(0);
             packetData = Arrays.copyOfRange(packetData, 0, packetData.length - 4);
         } else {
             eventTime = 0;
@@ -214,14 +220,8 @@ public class BuzzerState {
                             case "CLEAR":
                                 callback.action(BUZZER_CMD.CLEAR, eventTime);
                                 break;
-                            case "INTERRUPTION":
-                                callback.action(BUZZER_CMD.INTERRUPTION, eventTime);
-                                break;
-                            case "CORRECT":
-                                callback.action(BUZZER_CMD.CORRECT, eventTime);
-                                break;
-                            case "ERROR":
-                                callback.action(BUZZER_CMD.ERROR, eventTime);
+                            case "QM":
+                                callback.action(BUZZER_CMD.QM, eventTime);
                                 break;
                         }
                     }
@@ -373,15 +373,22 @@ public class BuzzerState {
         cboVolume.addItemListener(new ItemListener() {
             @Override
             public void itemStateChanged(ItemEvent e) {
-                if (updatingConfig) {
+                if (updatingConfig || e.getStateChange() == ItemEvent.DESELECTED) {
                     return;
                 }
                 String label = (String)e.getItem();
                 for (int index = 0; index < volumeLabels.length; index++) {
                     if (label.compareTo(volumeLabels[index]) == 0) {
-                        String cmd = "volume=" + index;
                         if (connected) {
-                            write(BT_PACKET_CONFIG_WRITE, cmd);
+                            try {
+//                                String cmd = "volume=1";
+//                                write(BT_PACKET_CONFIG_WRITE, cmd);
+//                                Thread.sleep(250);
+                                String cmd = "volume=" + (index * 10);
+                                write(BT_PACKET_CONFIG_WRITE, cmd);
+                                Thread.sleep(250);
+                            } catch (InterruptedException ex) {
+                            }
                         }
                         break;
                     }
