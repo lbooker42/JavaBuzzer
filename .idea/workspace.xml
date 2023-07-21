@@ -6,9 +6,9 @@
     </artifacts-to-build>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="38eb357c-e649-4f14-84b6-9a6b00d3e75d" name="Changes" comment="New changes, untested as yet.">
+    <list default="true" id="38eb357c-e649-4f14-84b6-9a6b00d3e75d" name="Changes" comment="More changes, looks pretty good so far.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/Main.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/com/biblequizsoftware/BuzzerState.form" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/biblequizsoftware/BuzzerState.form" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/com/biblequizsoftware/BuzzerState.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/biblequizsoftware/BuzzerState.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -92,7 +92,14 @@
       <option name="project" value="LOCAL" />
       <updated>1676253354838</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="More changes, looks pretty good so far.">
+      <created>1676948664164</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1676948664164</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -109,7 +116,8 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Initial commit" />
     <MESSAGE value="New changes, untested as yet." />
-    <option name="LAST_COMMIT_MESSAGE" value="New changes, untested as yet." />
+    <MESSAGE value="More changes, looks pretty good so far." />
+    <option name="LAST_COMMIT_MESSAGE" value="More changes, looks pretty good so far." />
   </component>
   <component name="XDebuggerManager">
     <watches-manager>

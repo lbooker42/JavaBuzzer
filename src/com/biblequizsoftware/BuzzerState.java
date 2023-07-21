@@ -5,13 +5,17 @@ import com.fazecast.jSerialComm.SerialPortDataListener;
 import com.fazecast.jSerialComm.SerialPortEvent;
 
 import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.filechooser.FileSystemView;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -52,6 +56,10 @@ public class BuzzerState {
 
     private final short BT_TIMESTAMP = (short) (1 << 15);
 
+    private final int PACKET_SIZE = 100;
+    private final int INITIAL_BURST_SIZE = 1;
+    private final int PACKET_SLEEP = 1;
+
     private JComboBox<SerialPort> cboDevices;
     private JButton scanButton;
     private JTextField textState;
@@ -61,6 +69,8 @@ public class BuzzerState {
     private JCheckBox chkRGBTimerEnabled;
     private JComboBox<String> cboVolume;
     private JCheckBox chkQMTimerEnabled;
+    private JProgressBar progressBar1;
+    private JButton updateButton;
 
     private boolean connected = false;
 
@@ -77,6 +87,8 @@ public class BuzzerState {
 
     int state = 0; // 0 = start of packet, 1 = middle of packet
     byte[] remainingData;
+
+    byte[] firmwareData;
 
     private SerialPort[] scannedPorts;
 
@@ -105,6 +117,14 @@ public class BuzzerState {
         });
     }
 
+    private short checksum(byte[] data, int start, int len)
+    {
+        int sum = 0;
+        for (int i = start; i < start + len; i++)
+            sum += data[i];
+        return (short)sum;
+    }
+
     private void write(final short type, String packet) {
         // get ascii bytes
         writePacket(type, packet.getBytes());
@@ -121,6 +141,29 @@ public class BuzzerState {
         bb.put(4, packetData);
         readPort.writeBytes(payload, payload.length);
     }
+
+//    private void sendPacket(byte[] data, int packetIndex, int packetSize)
+//    {
+//        int offset = packetIndex * packetSize;
+//
+//        if (offset < data.length)
+//        {
+//            int len = Math.min(packetSize, data.length - offset);
+//
+//            byte[] buffer = new byte[len + 4];
+//
+//            var packetBuffer = BitConverter.GetBytes((Int16)packetIndex);
+//            System.Buffer.BlockCopy(packetBuffer, 0, buffer, 0, packetBuffer.Length);
+//            System.Buffer.BlockCopy(data, offset, buffer, 2, len);
+//
+//            UInt16 csum = checksum(data, offset, len);
+//            var csumBuffer = BitConverter.GetBytes((Int16)csum);
+//            System.Buffer.BlockCopy(csumBuffer, 0, buffer, len + 2, csumBuffer.Length);
+//
+//            Write(BT_PACKET_OTA_MSG, buffer);
+//            Thread.Sleep(PACKET_SLEEP);
+//        }
+//    }
 
     private void updateConfig() {
         updatingConfig = true;
@@ -228,6 +271,31 @@ public class BuzzerState {
                 } catch (Exception ex) {
                 }
                 break;
+//            case BT_PACKET_OTA_REQ:
+//            {
+//                int firstPacket = ByteBuffer.wrap(packetData).order(ByteOrder.LITTLE_ENDIAN).getShort(0);
+//
+//
+//                int firstPacket = BitConverter.ToInt16(buffer, 0);
+//
+//                if (firstPacket * PACKET_SIZE > firmwareData.Length)
+//                {
+//                    // we've sent everything!!
+//                    Write(BT_PACKET_OTA_END, firmwareData.Length);
+//                }
+//                else
+//                {
+//                    // read the packets requested and send
+//                    for (int i = 0; i < buffer.Length / 2; i++)
+//                    {
+//                        int packet = BitConverter.ToInt16(buffer, i * 2);
+//                        sendPacket(firmwareData, packet, PACKET_SIZE);
+//                    }
+//                    // send the request for next set of packets
+//                    Write(PACKET_TYPE.BT_PACKET_OTA_REQ);
+//                }
+//            }
+//                break;
             default:
                 break;
         }
@@ -346,10 +414,58 @@ public class BuzzerState {
                     textState.setText("Disconnected");
                     connected = false;
                 }
+                updateButton.setEnabled(connected);
                 chkRGBTimerEnabled.setEnabled(connected);
                 chkQMTimerEnabled.setEnabled(connected);
                 cboVolume.setEnabled(connected);
                 textFirmware.setEnabled(connected);
+            }
+        });
+        updateButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                JFileChooser j = new JFileChooser(FileSystemView.getFileSystemView().getHomeDirectory());
+
+                // restrict the user to select files of all types
+                j.setAcceptAllFileFilterUsed(false);
+
+                // set a title for the dialog
+                j.setDialogTitle("Select a firmware (*.bin) file");
+
+                // only allow files of .txt extension
+                FileNameExtensionFilter restrict = new FileNameExtensionFilter("Only .bin files", "bin");
+                j.addChoosableFileFilter(restrict);
+
+                // invoke the showsSaveDialog function to show the save dialog
+                int r = j.showOpenDialog(null);
+
+                if (r == JFileChooser.APPROVE_OPTION) {
+                    // set the label to the path of the selected file
+                    System.out.println(j.getSelectedFile().getAbsolutePath());
+
+                    try {
+                        firmwareData = Files.readAllBytes(j.getSelectedFile().toPath());
+
+//                        write
+//
+//                        Write(PACKET_TYPE.BT_PACKET_OTA_START, firmwareData.Length);
+//
+//                        // give the device time to get ready for the packets
+//                        Thread.Sleep(2000);
+//
+//                        // send the first burst of packets
+//                        for (int i = 0; i < INITIAL_BURST_SIZE; i++)
+//                        {
+//                            sendPacket(firmwareData, i, PACKET_SIZE);
+//                        }
+//
+//                        // send the request for next set of packets
+//                        Write(PACKET_TYPE.BT_PACKET_OTA_REQ);
+
+                    } catch (IOException ex) {
+                        throw new RuntimeException(ex);
+                    }
+                }
             }
         });
         chkRGBTimerEnabled.addActionListener(new ActionListener() {
@@ -404,6 +520,7 @@ public class BuzzerState {
     public void clearBuzzer() {
         write(BT_PACKET_CMD, "CLEAR");
     }
+
     public void showDialog(boolean exitOnClose) {
         JFrame frame = new JFrame("BQS Buzzer Control");
         frame.setContentPane(this.rootPanel);
