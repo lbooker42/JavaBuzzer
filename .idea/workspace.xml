@@ -5,9 +5,13 @@
       <artifact name="BibleQuizSoftware-1.0.0" />
     </artifacts-to-build>
   </component>
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
   <component name="ChangeListManager">
-    <list default="true" id="38eb357c-e649-4f14-84b6-9a6b00d3e75d" name="Changes" comment="More changes, looks pretty good so far.">
+    <list default="true" id="38eb357c-e649-4f14-84b6-9a6b00d3e75d" name="Changes" comment="New changes, untested as yet.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/JavaBuzzer.iml" beforeDir="false" afterPath="$PROJECT_DIR$/JavaBuzzer.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/com/biblequizsoftware/BuzzerState.form" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/biblequizsoftware/BuzzerState.form" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/com/biblequizsoftware/BuzzerState.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/biblequizsoftware/BuzzerState.java" afterDir="false" />
     </list>
@@ -35,21 +39,25 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
-    &quot;jdk.selected.JAVA_MODULE&quot;: &quot;openjdk-19&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Development/java/JavaBuzzer/src/com&quot;,
-    &quot;project.structure.last.edited&quot;: &quot;Artifacts&quot;,
-    &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
-    &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;,
-    &quot;run.code.analysis.last.selected.profile&quot;: &quot;pProject Default&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "jdk.selected.JAVA_MODULE": "openjdk-19",
+    "last_opened_file_path": "/Users/larrybooker/_working/JavaBuzzer",
+    "project.structure.last.edited": "Modules",
+    "project.structure.proportion": "0.15",
+    "project.structure.side.proportion": "0.2",
+    "run.code.analysis.last.selected.profile": "pProject Default"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$" />
+    </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$" />
       <recent name="C:\Development\java\JavaBuzzer\src\com\biblequizsoftware" />
       <recent name="C:\Development\java\JavaBuzzer\src" />
       <recent name="C:\Development\java\JavaBuzzer\src\com\biblequizsoftware\bqsbuzzer" />
@@ -120,6 +128,15 @@
     <option name="LAST_COMMIT_MESSAGE" value="More changes, looks pretty good so far." />
   </component>
   <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/com/biblequizsoftware/BuzzerState.java</url>
+          <line>520</line>
+          <option name="timeStamp" value="14" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
     <watches-manager>
       <configuration name="Application">
         <watch expression="ports[0].comPort" />

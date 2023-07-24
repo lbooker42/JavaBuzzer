@@ -60,6 +60,8 @@ public class BuzzerState {
     private final int INITIAL_BURST_SIZE = 1;
     private final int PACKET_SLEEP = 1;
 
+    private boolean sendComplete;
+
     private JComboBox<SerialPort> cboDevices;
     private JButton scanButton;
     private JTextField textState;
@@ -93,18 +95,26 @@ public class BuzzerState {
     private SerialPort[] scannedPorts;
 
     private final String[] volumeLabels = new String[]{
-            "Volume 0%",
-            "Volume 10%",
-            "Volume 20%",
-            "Volume 30%",
-            "Volume 40%",
-            "Volume 50%",
-            "Volume 60%",
-            "Volume 70%",
-            "Volume 80%",
-            "Volume 90%",
-            "Volume 100%",
+        "Volume 0%",
+        "Volume 10%",
+        "Volume 20%",
+        "Volume 30%",
+        "Volume 40%",
+        "Volume 50%",
+        "Volume 60%",
+        "Volume 70%",
+        "Volume 80%",
+        "Volume 90%",
+        "Volume 100%",
     };
+
+    private final String[] configItems = new String[] {
+        "version",
+        "volume",
+        "rgb_timer",
+        "qm_timer",
+    };
+
 
     private void scanForDevices() {
         scannedPorts = SerialPort.getCommPorts();
@@ -125,9 +135,21 @@ public class BuzzerState {
         return (short)sum;
     }
 
+    private void write(final short type) {
+        // get ascii bytes
+        writePacket(type, new byte[0]);
+    }
+
     private void write(final short type, String packet) {
         // get ascii bytes
         writePacket(type, packet.getBytes());
+    }
+
+    private void write(final short type, int value) {
+        byte[] payload = new byte[4];
+        ByteBuffer bb = ByteBuffer.wrap(payload).order(ByteOrder.LITTLE_ENDIAN);
+        bb.putInt(0, value);
+        writePacket(type, payload);
     }
 
     private void writePacket(final short type, byte[] packetData) {
@@ -138,32 +160,49 @@ public class BuzzerState {
         ByteBuffer bb = ByteBuffer.wrap(payload).order(ByteOrder.LITTLE_ENDIAN);
         bb.putShort(0, type);
         bb.putShort(2, (short)packetData.length);
-        bb.put(4, packetData);
+        if (packetData.length > 0) {
+            bb.put(4, packetData);
+        }
         readPort.writeBytes(payload, payload.length);
     }
 
-//    private void sendPacket(byte[] data, int packetIndex, int packetSize)
-//    {
-//        int offset = packetIndex * packetSize;
-//
-//        if (offset < data.length)
-//        {
-//            int len = Math.min(packetSize, data.length - offset);
-//
-//            byte[] buffer = new byte[len + 4];
-//
-//            var packetBuffer = BitConverter.GetBytes((Int16)packetIndex);
-//            System.Buffer.BlockCopy(packetBuffer, 0, buffer, 0, packetBuffer.Length);
-//            System.Buffer.BlockCopy(data, offset, buffer, 2, len);
-//
-//            UInt16 csum = checksum(data, offset, len);
-//            var csumBuffer = BitConverter.GetBytes((Int16)csum);
-//            System.Buffer.BlockCopy(csumBuffer, 0, buffer, len + 2, csumBuffer.Length);
-//
-//            Write(BT_PACKET_OTA_MSG, buffer);
-//            Thread.Sleep(PACKET_SLEEP);
-//        }
-//    }
+    private void sendPacket(byte[] data, int packetIndex, int packetSize)
+    {
+        int offset = packetIndex * packetSize;
+
+        if (offset < data.length)
+        {
+            int len = Math.min(packetSize, data.length - offset);
+            byte[] packetData = Arrays.copyOfRange(data, offset, offset + len);
+
+            byte[] payload = new byte[len + 4];
+            ByteBuffer bb = ByteBuffer.wrap(payload).order(ByteOrder.LITTLE_ENDIAN);
+            bb.putShort(0, (short) packetIndex);
+            bb.put(2, packetData);
+            bb.putShort(packetData.length + 2, checksum(packetData));
+
+            writePacket(BT_PACKET_OTA_MSG, payload);
+        }
+    }
+
+    private short checksum(byte[] data) {
+        int csum = 0;
+        for (byte b : data) {
+            csum += (int)b & 0xff;
+        }
+        return (short)csum;
+    }
+
+    private boolean requestNextConfigItem() {
+        for (String s : configItems) {
+            if (!readConfig.containsKey(s)) {
+                write(BT_PACKET_CONFIG_READ, s);
+                return true;
+            }
+        }
+        // no more to do!
+        return false;
+    }
 
     private void updateConfig() {
         updatingConfig = true;
@@ -223,6 +262,9 @@ public class BuzzerState {
                 lastPingTime = LocalDateTime.now();
                 // send a response ping
                 writePacket(BT_PACKET_BQT_PING, new byte[0]);
+//                if (sendComplete && firmwareData != null) {
+//                    write(BT_PACKET_OTA_REQ);
+//                }
                 break;
             case BT_PACKET_CONFIG_READ:
                 try {
@@ -232,7 +274,9 @@ public class BuzzerState {
                     String value = config.substring(pos + 1);
                     if (value.length() > 0) {
                         readConfig.put(key, value);
-                        updateConfig();
+                        if (!requestNextConfigItem()) {
+                            updateConfig();
+                        }
                     }
                 } catch (Exception ex) {
                 }
@@ -271,31 +315,41 @@ public class BuzzerState {
                 } catch (Exception ex) {
                 }
                 break;
-//            case BT_PACKET_OTA_REQ:
-//            {
-//                int firstPacket = ByteBuffer.wrap(packetData).order(ByteOrder.LITTLE_ENDIAN).getShort(0);
-//
-//
-//                int firstPacket = BitConverter.ToInt16(buffer, 0);
-//
-//                if (firstPacket * PACKET_SIZE > firmwareData.Length)
-//                {
-//                    // we've sent everything!!
-//                    Write(BT_PACKET_OTA_END, firmwareData.Length);
-//                }
-//                else
-//                {
-//                    // read the packets requested and send
-//                    for (int i = 0; i < buffer.Length / 2; i++)
-//                    {
-//                        int packet = BitConverter.ToInt16(buffer, i * 2);
-//                        sendPacket(firmwareData, packet, PACKET_SIZE);
-//                    }
-//                    // send the request for next set of packets
-//                    Write(PACKET_TYPE.BT_PACKET_OTA_REQ);
-//                }
-//            }
-//                break;
+            case BT_PACKET_OTA_REQ:
+                {
+                    sendComplete = false;
+
+                    final ByteBuffer bb = ByteBuffer.wrap(packetData).order(ByteOrder.LITTLE_ENDIAN);
+                    int packet = bb.getShort(0);
+                    System.out.println("Requested: " + packet);
+
+                    if (packet * PACKET_SIZE > firmwareData.length)
+                    {
+                        // we've sent everything!!
+                        write(BT_PACKET_OTA_END, firmwareData.length);
+                        firmwareData = null;
+                    }
+                    else
+                    {
+                        // read the packets requested and send
+                        for (int i = 0; i < packetData.length / 2; i++)
+                        {
+                            packet = bb.getShort(i * 2);
+                            System.out.println("Requested: " + packet);
+                            sendPacket(firmwareData, packet, PACKET_SIZE);
+                            progressBar1.setValue(packet);
+                            try {
+                                Thread.sleep(PACKET_SLEEP);
+                            } catch (Exception ex) {
+                            }
+                        }
+                        sendComplete = true;
+
+                        // send the request for next set of packets
+                        write(BT_PACKET_OTA_REQ);
+                    }
+                }
+                break;
             default:
                 break;
         }
@@ -341,7 +395,6 @@ public class BuzzerState {
                     final byte[] packetData = Arrays.copyOfRange(allData, 4, packetLen - 4);
                     processPacket(type, packetData);
                 }
-
                 // return to state 0 - start of packet
                 state = 0;
             } else {
@@ -398,10 +451,10 @@ public class BuzzerState {
                             });
 
                             // request the config info
-                            write(BT_PACKET_CONFIG_READ, "version");
-                            write(BT_PACKET_CONFIG_READ, "volume");
-                            write(BT_PACKET_CONFIG_READ, "rgb_timer");
-                            write(BT_PACKET_CONFIG_READ, "qm_timer");
+                            readConfig.clear();
+                            if (!requestNextConfigItem()) {
+                                updateConfig();
+                            }
                         } else {
                             textState.setText("Connection failed!");
                         }
@@ -445,24 +498,26 @@ public class BuzzerState {
 
                     try {
                         firmwareData = Files.readAllBytes(j.getSelectedFile().toPath());
+                        progressBar1.setMaximum(firmwareData.length / PACKET_SIZE);
 
-//                        write
-//
-//                        Write(PACKET_TYPE.BT_PACKET_OTA_START, firmwareData.Length);
-//
-//                        // give the device time to get ready for the packets
-//                        Thread.Sleep(2000);
-//
-//                        // send the first burst of packets
-//                        for (int i = 0; i < INITIAL_BURST_SIZE; i++)
-//                        {
-//                            sendPacket(firmwareData, i, PACKET_SIZE);
-//                        }
-//
-//                        // send the request for next set of packets
-//                        Write(PACKET_TYPE.BT_PACKET_OTA_REQ);
+                        write(BT_PACKET_OTA_START, firmwareData.length);
 
-                    } catch (IOException ex) {
+                        // give the device time to get ready for the packets
+                        Thread.sleep(2000);
+
+                        // send the first burst of packets
+                        for (int i = 0; i < INITIAL_BURST_SIZE; i++)
+                        {
+                            sendPacket(firmwareData, i, PACKET_SIZE);
+                            progressBar1.setValue(i);
+                        }
+
+                        // send the request for next set of packets
+                        write(BT_PACKET_OTA_REQ);
+
+                        sendComplete = true;
+
+                    } catch (IOException | InterruptedException ex) {
                         throw new RuntimeException(ex);
                     }
                 }
@@ -497,9 +552,6 @@ public class BuzzerState {
                     if (label.compareTo(volumeLabels[index]) == 0) {
                         if (connected) {
                             try {
-//                                String cmd = "volume=1";
-//                                write(BT_PACKET_CONFIG_WRITE, cmd);
-//                                Thread.sleep(250);
                                 String cmd = "volume=" + (index * 10);
                                 write(BT_PACKET_CONFIG_WRITE, cmd);
                                 Thread.sleep(250);
