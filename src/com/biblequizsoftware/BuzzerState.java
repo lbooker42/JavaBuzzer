@@ -17,6 +17,7 @@ import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.HashMap;
 
@@ -60,7 +61,7 @@ public class BuzzerState {
     private final int INITIAL_BURST_SIZE = 1;
     private final int PACKET_SLEEP = 1;
 
-    private boolean sendComplete;
+    private LocalDateTime lastOTAReqTime = null;
 
     private JComboBox<SerialPort> cboDevices;
     private JButton scanButton;
@@ -115,6 +116,7 @@ public class BuzzerState {
         "qm_timer",
     };
 
+    private Thread otaRetry = null;
 
     private void scanForDevices() {
         scannedPorts = SerialPort.getCommPorts();
@@ -317,8 +319,6 @@ public class BuzzerState {
                 break;
             case BT_PACKET_OTA_REQ:
                 {
-                    sendComplete = false;
-
                     final ByteBuffer bb = ByteBuffer.wrap(packetData).order(ByteOrder.LITTLE_ENDIAN);
                     int packet = bb.getShort(0);
                     System.out.println("Requested: " + packet);
@@ -328,6 +328,7 @@ public class BuzzerState {
                         // we've sent everything!!
                         write(BT_PACKET_OTA_END, firmwareData.length);
                         firmwareData = null;
+                        lastOTAReqTime = null;
                     }
                     else
                     {
@@ -343,10 +344,10 @@ public class BuzzerState {
                             } catch (Exception ex) {
                             }
                         }
-                        sendComplete = true;
 
                         // send the request for next set of packets
                         write(BT_PACKET_OTA_REQ);
+                        lastOTAReqTime = LocalDateTime.now();
                     }
                 }
                 break;
@@ -503,7 +504,7 @@ public class BuzzerState {
                         write(BT_PACKET_OTA_START, firmwareData.length);
 
                         // give the device time to get ready for the packets
-                        Thread.sleep(2000);
+                        Thread.sleep(500);
 
                         // send the first burst of packets
                         for (int i = 0; i < INITIAL_BURST_SIZE; i++)
@@ -514,9 +515,27 @@ public class BuzzerState {
 
                         // send the request for next set of packets
                         write(BT_PACKET_OTA_REQ);
+                        lastOTAReqTime = LocalDateTime.now();
 
-                        sendComplete = true;
-
+                        if (otaRetry != null) {
+                            otaRetry.interrupt();
+                            otaRetry = null;
+                        }
+                        otaRetry = new Thread(()-> {
+                            try {
+                                while (lastOTAReqTime != null) {
+                                    final long elapsedMs = ChronoUnit.MILLIS.between(lastOTAReqTime, LocalDateTime.now());
+                                    if (elapsedMs > 5000) {
+                                        write(BT_PACKET_OTA_REQ);
+                                        lastOTAReqTime = LocalDateTime.now();
+                                    }
+                                    Thread.sleep(100);
+                                }
+                            } catch (InterruptedException ex) {
+                                throw new RuntimeException(ex);
+                            }
+                        });
+                        otaRetry.start();
                     } catch (IOException | InterruptedException ex) {
                         throw new RuntimeException(ex);
                     }
