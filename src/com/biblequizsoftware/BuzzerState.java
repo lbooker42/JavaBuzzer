@@ -329,6 +329,7 @@ public class BuzzerState {
                         write(BT_PACKET_OTA_END, firmwareData.length);
                         firmwareData = null;
                         lastOTAReqTime = null;
+                        JOptionPane.showMessageDialog(rootPanel, "Firmware upload complete! You may need to forget/repair the device to confirm the update was successful.");
                     }
                     else
                     {
