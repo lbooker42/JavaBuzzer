@@ -321,7 +321,6 @@ public class BuzzerState {
                 {
                     final ByteBuffer bb = ByteBuffer.wrap(packetData).order(ByteOrder.LITTLE_ENDIAN);
                     int packet = bb.getShort(0);
-                    System.out.println("Requested: " + packet);
 
                     if (packet * PACKET_SIZE > firmwareData.length)
                     {
@@ -337,7 +336,6 @@ public class BuzzerState {
                         for (int i = 0; i < packetData.length / 2; i++)
                         {
                             packet = bb.getShort(i * 2);
-                            System.out.println("Requested: " + packet);
                             sendPacket(firmwareData, packet, PACKET_SIZE);
                             progressBar1.setValue(packet);
                             try {
